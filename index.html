@@ -434,6 +434,15 @@
         .day-appointment.cancelled { background: #fee2e2; color: #991b1b; }
         .day-appointment.paid { background: #e0e7ff; color: #3730a3; }
 
+        /* Month View */
+        .month-view {
+            display: none;
+        }
+
+        .month-view.active {
+            display: block;
+        }
+
         /* Week View */
         .week-view {
             display: none;
@@ -1055,7 +1064,7 @@
                         </div>
                     </div>
                     
-                    <div class="month-view" id="monthView">
+                    <div class="month-view active" id="monthView">
                         <div class="month-grid" id="monthGrid"></div>
                     </div>
                     
