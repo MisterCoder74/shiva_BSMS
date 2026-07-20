@@ -1093,13 +1093,13 @@ function refreshStats() {
     
     const subtotal = servicesRevenue + productsRevenue;
     const tax = subtotal * 0.22;
-    const total = subtotal + tax;
+    const netRevenue = subtotal - tax;
 
     document.getElementById('statsServicesRevenue').textContent = formatCurrency(servicesRevenue);
     document.getElementById('statsProductsRevenue').textContent = formatCurrency(productsRevenue);
     document.getElementById('statsSubtotal').textContent = formatCurrency(subtotal);
     document.getElementById('statsTax').textContent = formatCurrency(tax);
-    document.getElementById('statsTotal').innerHTML = `<strong>${formatCurrency(total)}</strong>`;
+    document.getElementById('statsTotal').innerHTML = `<strong>${formatCurrency(netRevenue)}</strong>`;
 
     document.getElementById('statsTotalAppointments').textContent = appointments.length;
     document.getElementById('statsCompleted').textContent = appointments.filter(a => a.status === 'completed' || a.status === 'paid').length;
