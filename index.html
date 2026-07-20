@@ -176,6 +176,25 @@
             width: 100%;
         }
 
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 1.25rem 1rem;
+            font-size: 0.8rem;
+            color: var(--gray-500, #6b7280);
+            border-top: 1px solid var(--gray-200, #e5e7eb);
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
         /* Cards */
         .card {
             background: white;
@@ -936,7 +955,7 @@
         <!-- Navigation Sidebar -->
         <nav class="nav-sidebar" id="navSidebar">
             <div class="nav-header">
-                <div class="nav-title">💇 Beauty Manager</div>
+                <div class="nav-title">💇 Shiva Beauty</div>
                 <div class="nav-subtitle" id="navSalonName">Your Salon</div>
             </div>
             <div class="nav-menu">
@@ -1400,6 +1419,11 @@
             <span class="install-text">Install this app on your device for quick access</span>
             <button class="btn btn-primary btn-sm" onclick="installApp()">Install</button>
         </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            &copy; <?php echo date('Y'); ?> &mdash; Tool by <a href="https://www.vivacitydesign.net/beautysalontools/divisione_bellezza.html" target="_blank" rel="noopener noreferrer">Vivacity Design - Divisione Bellezza</a>
+        </footer>
     </div>
 
     <!-- Appointment Modal -->
