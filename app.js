@@ -1,5 +1,5 @@
 // Beauty Salon Management System
-// Pure Vanilla JavaScript with LocalStorage
+// Vanilla JavaScript frontend, persisted via a PHP/JSON API (see api/data.php)
 
 // ============================================
 // DATA STORE
@@ -103,6 +103,34 @@ function getCurrentTime() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
+}
+
+// ============================================
+// INPUT VALIDATION
+// ============================================
+
+function isValidEmail(email) {
+    if (!email) return true; // email is optional almost everywhere
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidNonNegativeNumber(value) {
+    return typeof value === 'number' && !isNaN(value) && isFinite(value) && value >= 0;
+}
+
+function isValidPositiveInteger(value) {
+    return Number.isInteger(value) && value > 0;
+}
+
+// Collects failed checks and shows them as one alert (keeps existing alert()-based UX,
+// just makes each save() validate every field instead of stopping at the first one).
+function validateFields(checks) {
+    const errors = checks.filter(([ok]) => !ok).map(([, message]) => message);
+    if (errors.length > 0) {
+        alert(errors.join('\n'));
+        return false;
+    }
+    return true;
 }
 
 // ============================================
@@ -596,8 +624,16 @@ function saveAppointment() {
     const status = document.getElementById('appointmentStatus').value;
     const notes = document.getElementById('appointmentNotes').value;
 
-    if (!clientId || !staffId || !serviceId || !date || !time) {
-        alert('Please fill in all required fields');
+    const validStatuses = ['pending', 'completed', 'paid', 'cancelled', 'noshow'];
+    if (!validateFields([
+        [!!clientId, 'Please select a client'],
+        [!!staffId, 'Please select a staff member'],
+        [!!serviceId, 'Please select a service'],
+        [!!date, 'Please select a date'],
+        [!!time, 'Please select a time'],
+        [isValidNonNegativeNumber(price), 'Price must be a non-negative number'],
+        [validStatuses.includes(status), 'Please select a valid status']
+    ])) {
         return;
     }
 
@@ -713,8 +749,11 @@ function saveClient() {
     const dob = document.getElementById('clientDob').value;
     const notes = document.getElementById('clientNotes').value.trim();
 
-    if (!firstName || !lastName) {
-        alert('Please enter first and last name');
+    if (!validateFields([
+        [!!firstName, 'Please enter a first name'],
+        [!!lastName, 'Please enter a last name'],
+        [isValidEmail(email), 'Please enter a valid email address']
+    ])) {
         return;
     }
 
@@ -815,8 +854,11 @@ function saveStaff() {
     const role = document.getElementById('staffRole').value.trim();
     const color = document.getElementById('staffColor').value;
 
-    if (!firstName || !lastName) {
-        alert('Please enter first and last name');
+    if (!validateFields([
+        [!!firstName, 'Please enter a first name'],
+        [!!lastName, 'Please enter a last name'],
+        [isValidEmail(email), 'Please enter a valid email address']
+    ])) {
         return;
     }
 
@@ -914,8 +956,11 @@ function saveService() {
     const price = parseFloat(document.getElementById('servicePrice').value) || 0;
     const category = document.getElementById('serviceCategory').value.trim();
 
-    if (!name || price < 0) {
-        alert('Please enter service name and price');
+    if (!validateFields([
+        [!!name, 'Please enter a service name'],
+        [isValidPositiveInteger(duration), 'Duration must be a positive number of minutes'],
+        [isValidNonNegativeNumber(price), 'Price must be a non-negative number']
+    ])) {
         return;
     }
 
@@ -1013,8 +1058,11 @@ function saveProduct() {
     const stock = parseInt(document.getElementById('productStock').value) || 0;
     const category = document.getElementById('productCategory').value.trim();
 
-    if (!name || price < 0) {
-        alert('Please enter product name and price');
+    if (!validateFields([
+        [!!name, 'Please enter a product name'],
+        [isValidNonNegativeNumber(price), 'Price must be a non-negative number'],
+        [Number.isInteger(stock) && stock >= 0, 'Stock must be a non-negative whole number']
+    ])) {
         return;
     }
 
@@ -1493,8 +1541,13 @@ function saveSale() {
     const date = document.getElementById('saleDate').value;
     const notes = document.getElementById('saleNotes').value.trim();
 
-    if (!productId || !date) {
-        alert('Please select a product and date');
+    if (!validateFields([
+        [!!productId, 'Please select a product'],
+        [!!date, 'Please select a date'],
+        [isValidPositiveInteger(quantity), 'Quantity must be a positive whole number'],
+        [isValidNonNegativeNumber(unitPrice), 'Unit price must be a non-negative number'],
+        [isValidNonNegativeNumber(total), 'Total must be a non-negative number']
+    ])) {
         return;
     }
 
@@ -1585,11 +1638,19 @@ function refreshSettings() {
 }
 
 function saveSettings() {
+    const email = document.getElementById('settingEmail').value.trim();
+
+    if (!validateFields([
+        [isValidEmail(email), 'Please enter a valid email address']
+    ])) {
+        return;
+    }
+
     DB.settings.salonName = document.getElementById('settingSalonName').value.trim() || 'Beauty Salon';
     DB.settings.ivaCode = document.getElementById('settingIvaCode').value.trim();
     DB.settings.address = document.getElementById('settingAddress').value.trim();
     DB.settings.phone = document.getElementById('settingPhone').value.trim();
-    DB.settings.email = document.getElementById('settingEmail').value.trim();
+    DB.settings.email = email;
     DB.settings.website = document.getElementById('settingWebsite').value.trim();
 
     saveData('settings');
