@@ -696,6 +696,7 @@ function refreshClients() {
                     <div class="list-item-subtitle">${c.phone || ''}${c.phone && c.email ? ' • ' : ''}${c.email || ''}</div>
                 </div>
                 <div class="list-item-actions">
+                    <button class="icon-btn" onclick="event.stopPropagation(); viewClientHistory('${c.id}')" title="View appointment history">👁️</button>
                     <button class="icon-btn" onclick="event.stopPropagation(); editClient('${c.id}')">✏️</button>
                 </div>
             </div>
@@ -738,6 +739,53 @@ function openClientModal(id = null) {
 
 function editClient(id) {
     openClientModal(id);
+}
+
+function viewClientHistory(id) {
+    const client = DB.clients.find(c => c.id === id);
+    const container = document.getElementById('clientHistoryList');
+    if (!client) return;
+
+    document.getElementById('clientHistoryModalTitle').textContent =
+        `Appointment History — ${client.firstName} ${client.lastName}`;
+
+    const appointments = DB.appointments
+        .filter(a => a.clientId === id)
+        .sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
+
+    if (appointments.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-title">No appointments yet</div>
+                <p>This client has no appointment history</p>
+            </div>
+        `;
+    } else {
+        container.innerHTML = appointments.map(a => {
+            const service = DB.services.find(s => s.id === a.serviceId);
+            const staff = DB.staff.find(s => s.id === a.staffId);
+
+            const statusClass = `badge-${a.status}`;
+            const statusLabel = a.status === 'noshow' ? 'No Show' :
+                               a.status.charAt(0).toUpperCase() + a.status.slice(1);
+
+            return `
+                <div class="list-item">
+                    <div class="list-item-avatar" style="background: ${staff ? staff.color : 'var(--primary)'};">
+                        ${getInitials(client.firstName, client.lastName)}
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">${service ? service.name : 'Unknown service'}</div>
+                        <div class="list-item-subtitle">${formatDate(a.date)} at ${a.time} • ${staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown staff'} • ${formatCurrency(a.price)}</div>
+                    </div>
+                    <span class="badge ${statusClass}">${statusLabel}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    showModal('clientHistoryModal');
 }
 
 function saveClient() {
