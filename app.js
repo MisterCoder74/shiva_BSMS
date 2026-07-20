@@ -311,8 +311,8 @@ function setCalendarView(view) {
     calendarView = view;
     document.getElementById('btnMonth').classList.toggle('active', view === 'month');
     document.getElementById('btnWeek').classList.toggle('active', view === 'week');
-    document.getElementById('monthView').classList.toggle('active', view === 'week');
-    document.getElementById('weekView').classList.toggle('active', view === 'month');
+    document.getElementById('monthView').classList.toggle('active', view === 'month');
+    document.getElementById('weekView').classList.toggle('active', view === 'week');
     refreshCalendar();
 }
 
