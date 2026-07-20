@@ -106,19 +106,46 @@ function getCurrentTime() {
 }
 
 // ============================================
-// LOCAL STORAGE
+// DATA PERSISTENCE (JSON file via PHP API)
 // ============================================
 
+const API_URL = 'api/data.php';
+
 function saveData() {
-    localStorage.setItem('beautySalonDB', JSON.stringify(DB));
+    fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(DB)
+    }).catch(err => {
+        console.error('Save failed:', err);
+        showSaveError();
+    });
 }
 
-function loadData() {
-    const saved = localStorage.getItem('beautySalonDB');
-    if (saved) {
-        const parsed = JSON.parse(saved);
+async function loadData() {
+    try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const parsed = await res.json();
         Object.assign(DB, parsed);
+    } catch (err) {
+        console.error('Load failed:', err);
+        showSaveError('Could not load data from server. Working offline with defaults.');
     }
+}
+
+function showSaveError(message) {
+    let banner = document.getElementById('saveErrorBanner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'saveErrorBanner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:#fff;padding:0.5rem 1rem;text-align:center;font-size:0.85rem;z-index:9999;';
+        document.body.prepend(banner);
+    }
+    banner.textContent = message || '⚠️ Could not save changes. Check your connection and try again.';
+    banner.style.display = 'block';
+    clearTimeout(showSaveError._t);
+    showSaveError._t = setTimeout(() => { banner.style.display = 'none'; }, 4000);
 }
 
 // ============================================
@@ -1562,9 +1589,10 @@ function installApp() {
 // INITIALIZATION
 // ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadData();
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadData();
     initSampleData();
+    saveData();
     updateHeaderInfo();
     refreshDashboard();
 
