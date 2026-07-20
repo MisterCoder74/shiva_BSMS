@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ec4899">
+    <title>Beauty Salon Manager</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #ec4899;
+            --primary-dark: #db2777;
+            --secondary: #8b5cf6;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--gray-100);
+            color: var(--gray-900);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* App Container */
+        .app {
+            max-width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .salon-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .menu-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+
+        /* Navigation */
+        .nav-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .nav-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .nav-sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: white;
+            z-index: 201;
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-sidebar.active {
+            left: 0;
+        }
+
+        .nav-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 2rem 1.5rem;
+        }
+
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-subtitle {
+            opacity: 0.9;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .nav-menu {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            color: var(--gray-600);
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: var(--gray-100);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--gray-800);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-fab {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-size: 1.75rem;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+            z-index: 50;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-top: 0.25rem;
+        }
+
+        .stat-value.primary { color: var(--primary); }
+        .stat-value.success { color: var(--success); }
+        .stat-value.warning { color: var(--warning); }
+        .stat-value.info { color: var(--info); }
+
+        /* Calendar */
+        .calendar-container {
+            background: white;
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .calendar-nav-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .calendar-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .calendar-view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--gray-100);
+            padding: 0.25rem;
+            border-radius: 10px;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .view-btn.active {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Month View */
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--gray-200);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .day-header {
+            background: var(--gray-100);
+            padding: 0.75rem 0.25rem;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            text-transform: uppercase;
+        }
+
+        .day-cell {
+            background: white;
+            min-height: 80px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        .day-cell:hover {
+            background: var(--gray-100);
+        }
+
+        .day-cell.other-month {
+            background: var(--gray-50);
+            color: var(--gray-400);
+        }
+
+        .day-cell.today {
+            background: #fdf2f8;
+        }
+
+        .day-cell.today .day-number {
+            background: var(--primary);
+            color: white;
+        }
+
+        .day-number {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .day-appointments {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 4px;
+        }
+
+        .day-appointment {
+            font-size: 0.625rem;
+            padding: 2px 4px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .day-appointment.pending { background: #fef3c7; color: #92400e; }
+        .day-appointment.confirmed { background: #dbeafe; color: #1e40af; }
+        .day-appointment.completed { background: #d1fae5; color: #065f46; }
+        .day-appointment.cancelled { background: #fee2e2; color: #991b1b; }
+        .day-appointment.paid { background: #e0e7ff; color: #3730a3; }
+
+        /* Week View */
+        .week-view {
+            display: none;
+        }
+
+        .week-view.active {
+            display: block;
+        }
+
+        .week-header {
+            display: grid;
+            grid-template-columns: 60px repeat(7, 1fr);
+            gap: 1px;
+            background: var(--gray-200);
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
+        }
+
+        .week-header-cell {
+            background: var(--gray-100);
+            padding: 0.75rem 0.25rem;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+
+        .week-header-cell:first-child {
+            background: var(--gray-200);
+        }
+
+        .week-day-name {
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+
+        .week-day-number {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-top: 0.25rem;
+        }
+
+        .week-day-number.today {
+            color: var(--primary);
+        }
+
+        .week-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(7, 1fr);
+            gap: 1px;
+            background: var(--gray-200);
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        }
+
+        .time-slot {
+            background: var(--gray-50);
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .week-cell {
+            background: white;
+            height: 50px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .week-cell:hover {
+            background: var(--gray-50);
+        }
+
+        .week-appointment {
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            padding: 4px;
+            border-radius: 6px;
+            font-size: 0.625rem;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        /* Lists */
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .list-item-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .list-item-content {
+            flex: 1;
+        }
+
+        .list-item-title {
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .list-item-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .list-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: var(--gray-200);
+        }
+
+        /* Status Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-confirmed { background: #dbeafe; color: #1e40af; }
+        .badge-completed { background: #d1fae5; color: #065f46; }
+        .badge-cancelled { background: #fee2e2; color: #991b1b; }
+        .badge-noshow { background: #fecaca; color: #7f1d1d; }
+        .badge-paid { background: #e0e7ff; color: #3730a3; }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: .5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.25rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 300;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            max-height: 98vh;
+            border-radius: 24px 24px 0 0;
+            overflow-Y: auto;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+
+        .modal-body {
+            padding: 1rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 100px);
+        }
+
+        .modal-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .modal-footer .btn {
+            flex: 1;
+        }
+
+        /* Page Sections */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .page-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--gray-600);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Stats Page */
+        .stats-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .stats-period {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .period-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--gray-300);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .period-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .stats-row:last-child {
+            border-bottom: none;
+        }
+
+        .stats-label {
+            color: var(--gray-600);
+        }
+
+        .stats-value {
+            font-weight: 600;
+        }
+
+        /* Search */
+        .search-box {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.875rem 1rem 0.875rem 2.75rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            font-size: 1rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.25rem;
+            color: var(--gray-400);
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .day-cell {
+                min-height: 100px;
+            }
+
+            .modal-overlay {
+                align-items: center;
+            }
+
+            .modal-content {
+                border-radius: 24px;
+                max-height: 85vh;
+            }
+
+            .modal-footer .btn {
+                flex: 0 0 auto;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease;
+        }
+
+        /* Print styles */
+        @media print {
+            .header, .nav-overlay, .btn-fab, .modal-overlay {
+                display: none !important;
+            }
+        }
+
+        /* Install banner */
+        .install-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 150;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .install-banner.show {
+            display: flex;
+        }
+
+        .install-text {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+    </style>
+        <?php $version = time(); ?>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <span class="salon-name" id="headerSalonName">Beauty Salon</span>
+                <button class="menu-btn" onclick="toggleNav()">☰</button>
+            </div>
+        </header>
+
+        <!-- Navigation Overlay -->
+        <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+        <!-- Navigation Sidebar -->
+        <nav class="nav-sidebar" id="navSidebar">
+            <div class="nav-header">
+                <div class="nav-title">💇 Beauty Manager</div>
+                <div class="nav-subtitle" id="navSalonName">Your Salon</div>
+            </div>
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" onclick="showPage('dashboard'); toggleNav(); return false;">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('calendar'); toggleNav(); return false;">
+                    <span class="nav-icon">📅</span>
+                    <span>Calendar</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('appointments'); toggleNav(); return false;">
+                    <span class="nav-icon">📋</span>
+                    <span>Appointments</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('clients'); toggleNav(); return false;">
+                    <span class="nav-icon">👥</span>
+                    <span>Clients</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('staff'); toggleNav(); return false;">
+                    <span class="nav-icon">👤</span>
+                    <span>Staff</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('services'); toggleNav(); return false;">
+                    <span class="nav-icon">✂️</span>
+                    <span>Services</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('products'); toggleNav(); return false;">
+                    <span class="nav-icon">🧴</span>
+                    <span>Products</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('sales'); toggleNav(); return false;">
+                    <span class="nav-icon">🛒</span>
+                    <span>Sales</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('stats'); toggleNav(); return false;">
+                    <span class="nav-icon">📈</span>
+                    <span>Statistics</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showPage('settings'); toggleNav(); return false;">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Today's Appointments</div>
+                        <div class="stat-value primary" id="dashTodayCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Pending</div>
+                        <div class="stat-value warning" id="dashPendingCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Completed</div>
+                        <div class="stat-value success" id="dashCompletedCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Today's Revenue</div>
+                        <div class="stat-value info" id="dashRevenue">€0.00</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Today's Schedule</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showPage('calendar')">View Calendar</button>
+                    </div>
+                    <div id="todayAppointments">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📅</div>
+                            <div class="empty-state-title">No appointments today</div>
+                            <p>Click the + button to add your first appointment</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Quick Stats</h2>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Total Clients</span>
+                        <span class="stats-value" id="dashTotalClients">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Total Services</span>
+                        <span class="stats-value" id="dashTotalServices">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Total Products</span>
+                        <span class="stats-value" id="dashTotalProducts">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Page -->
+            <div class="page" id="page-calendar">
+                <div class="page-header">
+                    <h1 class="page-title">Calendar</h1>
+                </div>
+                
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <div class="calendar-nav">
+                            <button class="calendar-nav-btn" onclick="changeMonth(-1)">‹</button>
+                            <button class="calendar-nav-btn" onclick="goToToday()">Today</button>
+                            <button class="calendar-nav-btn" onclick="changeMonth(1)">›</button>
+                        </div>
+                        <div class="calendar-title" id="calendarTitle"></div>
+                        <div class="calendar-view-toggle">
+                            <button class="view-btn active" onclick="setCalendarView('month')" id="btnMonth">Month</button>
+                            <button class="view-btn" onclick="setCalendarView('week')" id="btnWeek">Week</button>
+                        </div>
+                    </div>
+                    
+                    <div class="month-view" id="monthView">
+                        <div class="month-grid" id="monthGrid"></div>
+                    </div>
+                    
+                    <div class="week-view" id="weekView">
+                        <div class="week-header" id="weekHeader"></div>
+                        <div class="week-grid" id="weekGrid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appointments Page -->
+            <div class="page" id="page-appointments">
+                <div class="page-header">
+                    <h1 class="page-title">Appointments</h1>
+                </div>
+                
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Search appointments..." id="appointmentSearch" oninput="filterAppointments()">
+                </div>
+                
+                <div id="appointmentsList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-title">No appointments yet</div>
+                        <p>Start by adding appointments from the calendar</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clients Page -->
+            <div class="page" id="page-clients">
+                <div class="page-header">
+                    <h1 class="page-title">Clients</h1>
+                </div>
+                
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Search clients..." id="clientSearch" oninput="filterClients()">
+                </div>
+                
+                <div id="clientsList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div class="empty-state-title">No clients yet</div>
+                        <p>Add your first client to get started</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Staff Page -->
+            <div class="page" id="page-staff">
+                <div class="page-header">
+                    <h1 class="page-title">Staff</h1>
+                </div>
+                
+                <div id="staffList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👤</div>
+                        <div class="empty-state-title">No staff members yet</div>
+                        <p>Add your team members to manage appointments</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services Page -->
+            <div class="page" id="page-services">
+                <div class="page-header">
+                    <h1 class="page-title">Services</h1>
+                </div>
+                
+                <div id="servicesList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✂️</div>
+                        <div class="empty-state-title">No services yet</div>
+                        <p>Add your salon services with prices</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Page -->
+            <div class="page" id="page-products">
+                <div class="page-header">
+                    <h1 class="page-title">Products</h1>
+                </div>
+                
+                <div id="productsList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🧴</div>
+                        <div class="empty-state-title">No products yet</div>
+                        <p>Add products you sell to clients</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Page -->
+            <div class="page" id="page-sales">
+                <div class="page-header">
+                    <h1 class="page-title">Product Sales</h1>
+                </div>
+                
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Search sales..." id="salesSearch" oninput="filterSales()">
+                </div>
+                
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div class="card-header">
+                        <h2 class="card-title">Quick Sale</h2>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <select class="form-select" id="quickSaleProduct" style="flex: 1; min-width: 150px;">
+                            <option value="">Select Product</option>
+                        </select>
+                        <input type="number" class="form-input" id="quickSaleQty" placeholder="Qty" min="1" value="1" style="width: 80px;">
+                        <button class="btn btn-primary" onclick="quickSellProduct()">🛒 Sell</button>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--gray-600); margin-top: 0.5rem;">
+                        💡 Select a product from your inventory above to make a quick sale
+                    </p>
+                </div>
+
+                <div class="stats-card" style="margin-bottom: 1rem;">
+                    <div class="stats-row">
+                        <span class="stats-label">Today's Sales</span>
+                        <span class="stats-value" id="todaySalesCount">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Today's Revenue</span>
+                        <span class="stats-value" id="todaySalesRevenue">€0,00</span>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div class="card-header">
+                        <h2 class="card-title">📦 Product Inventory</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showPage('products')">Manage Products</button>
+                    </div>
+                    <div id="salesProductList">
+                        <div class="empty-state" style="padding: 1rem;">
+                            <p>Loading products...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="salesList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🛒</div>
+                        <div class="empty-state-title">No sales yet</div>
+                        <p>Start selling products to your clients</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Page -->
+            <div class="page" id="page-stats">
+                <div class="page-header">
+                    <h1 class="page-title">Statistics</h1>
+                </div>
+                
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <h2 class="stats-card-title">Revenue Overview</h2>
+                        <div class="stats-period">
+                            <button class="period-btn active" onclick="setStatsPeriod('day')">Day</button>
+                            <button class="period-btn" onclick="setStatsPeriod('week')">Week</button>
+                            <button class="period-btn" onclick="setStatsPeriod('month')">Month</button>
+                            <button class="period-btn" onclick="setStatsPeriod('year')">Year</button>
+                        </div>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Services Revenue</span>
+                        <span class="stats-value" id="statsServicesRevenue">€0.00</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Products Revenue</span>
+                        <span class="stats-value" id="statsProductsRevenue">€0.00</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Subtotal</span>
+                        <span class="stats-value" id="statsSubtotal">€0.00</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Tax (22% IVA)</span>
+                        <span class="stats-value" id="statsTax">€0.00</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label"><strong>Total Revenue</strong></span>
+                        <span class="stats-value" id="statsTotal"><strong>€0.00</strong></span>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <h2 class="stats-card-title">Appointments</h2>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Total Appointments</span>
+                        <span class="stats-value" id="statsTotalAppointments">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Completed</span>
+                        <span class="stats-value" id="statsCompleted">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Cancelled</span>
+                        <span class="stats-value" id="statsCancelled">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">No Show</span>
+                        <span class="stats-value" id="statsNoShow">0</span>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <h2 class="stats-card-title">Top Services</h2>
+                    </div>
+                    <div id="topServices">
+                        <div class="empty-state" style="padding: 1rem;">
+                            <p>No data available</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-card-header">
+                        <h2 class="stats-card-title">Top Products</h2>
+                    </div>
+                    <div id="topProducts">
+                        <div class="empty-state" style="padding: 1rem;">
+                            <p>No data available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div class="page" id="page-settings">
+                <div class="page-header">
+                    <h1 class="page-title">Settings</h1>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-title">Salon Information</h2>
+                    <div class="form-group">
+                        <label class="form-label">Salon Name</label>
+                        <input type="text" class="form-input" id="settingSalonName" placeholder="Your Beauty Salon">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">IVA/VAT Code</label>
+                        <input type="text" class="form-input" id="settingIvaCode" placeholder="IT12345678901">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-textarea" id="settingAddress" placeholder="Full address..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-input" id="settingPhone" placeholder="+39 123 456 7890">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="settingEmail" placeholder="salon@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Website</label>
+                        <input type="url" class="form-input" id="settingWebsite" placeholder="https://yoursalon.com">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                </div>
+
+                <div class="card" style="margin-top: 1rem;">
+                    <h2 class="card-title">Data Management</h2>
+                    <button class="btn btn-secondary" onclick="exportData()" style="margin-bottom: 0.5rem; width: 100%;">
+                        📥 Export All Data (JSON)
+                    </button>
+                    <label class="btn btn-secondary" style="width: 100%; display: block; text-align: center;">
+                        📤 Import Data (JSON)
+                        <input type="file" accept=".json" onchange="importData(this)" style="display: none;">
+                    </label>
+                </div>
+
+                <div class="card" style="margin-top: 1rem;">
+                    <h2 class="card-title">App Info</h2>
+                    <div class="stats-row">
+                        <span class="stats-label">Version</span>
+                        <span class="stats-value">1.0.0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Timezone</span>
+                        <span class="stats-value">Europe/Rome</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Floating Action Button -->
+        <button class="btn btn-primary btn-fab" onclick="showAddModal()">+</button>
+
+        <!-- Install Banner -->
+        <div class="install-banner" id="installBanner">
+            <span class="install-text">Install this app on your device for quick access</span>
+            <button class="btn btn-primary btn-sm" onclick="installApp()">Install</button>
+        </div>
+    </div>
+
+    <!-- Appointment Modal -->
+    <div class="modal-overlay" id="appointmentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="appointmentModalTitle">New Appointment</h2>
+                <button class="modal-close" onclick="closeModal('appointmentModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="appointmentId">
+                <div class="form-group">
+                    <label class="form-label">Client *</label>
+                    <select class="form-select" id="appointmentClient" required>
+                        <option value="">Select Client</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Staff Member *</label>
+                    <select class="form-select" id="appointmentStaff" required>
+                        <option value="">Select Staff</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Service *</label>
+                    <select class="form-select" id="appointmentService" onchange="updateAppointmentPrice()" required>
+                        <option value="">Select Service</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date *</label>
+                    <input type="date" class="form-input" id="appointmentDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Time * (8:00 - 19:00)</label>
+                    <select class="form-select" id="appointmentTime" required>
+                        <option value="">Select Time</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price (€)</label>
+                    <input type="number" class="form-input" id="appointmentPrice" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="appointmentStatus">
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="noshow">No Show</option>
+                        <option value="paid">Paid</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-textarea" id="appointmentNotes" placeholder="Any special notes..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('appointmentModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteAppointmentBtn" onclick="deleteAppointment()" style="display: none;">Delete</button>
+                <button type="button" class="btn btn-primary" onclick="saveAppointment()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Modal -->
+    <div class="modal-overlay" id="clientModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="clientModalTitle">New Client</h2>
+                <button class="modal-close" onclick="closeModal('clientModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="clientId">
+                <div class="form-group">
+                    <label class="form-label">First Name *</label>
+                    <input type="text" class="form-input" id="clientFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name *</label>
+                    <input type="text" class="form-input" id="clientLastName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-input" id="clientPhone">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="clientEmail">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" class="form-input" id="clientDob">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-textarea" id="clientNotes" placeholder="Allergies, preferences, etc..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('clientModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteClientBtn" onclick="deleteClient()" style="display: none;">Delete</button>
+                <button type="button" class="btn btn-primary" onclick="saveClient()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff Modal -->
+    <div class="modal-overlay" id="staffModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="staffModalTitle">New Staff Member</h2>
+                <button class="modal-close" onclick="closeModal('staffModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="staffId">
+                <div class="form-group">
+                    <label class="form-label">First Name *</label>
+                    <input type="text" class="form-input" id="staffFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name *</label>
+                    <input type="text" class="form-input" id="staffLastName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-input" id="staffPhone">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="staffEmail">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <input type="text" class="form-input" id="staffRole" placeholder="e.g. Hair Stylist, Esthetician">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <input type="color" class="form-input" id="staffColor" value="#ec4899">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('staffModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteStaffBtn" onclick="deleteStaff()" style="display: none;">Delete</button>
+                <button type="button" class="btn btn-primary" onclick="saveStaff()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Modal -->
+    <div class="modal-overlay" id="serviceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="serviceModalTitle">New Service</h2>
+                <button class="modal-close" onclick="closeModal('serviceModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="serviceId">
+                <div class="form-group">
+                    <label class="form-label">Service Name *</label>
+                    <input type="text" class="form-input" id="serviceName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="serviceDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Duration (minutes) *</label>
+                    <input type="number" class="form-input" id="serviceDuration" min="5" step="5" value="60" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price (€) *</label>
+                    <input type="number" class="form-input" id="servicePrice" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" class="form-input" id="serviceCategory" placeholder="e.g. Hair, Nails, Facial">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteServiceBtn" onclick="deleteService()" style="display: none;">Delete</button>
+                <button type="button" class="btn btn-primary" onclick="saveService()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="productModalTitle">New Product</h2>
+                <button class="modal-close" onclick="closeModal('productModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="productId">
+                <div class="form-group">
+                    <label class="form-label">Product Name *</label>
+                    <input type="text" class="form-input" id="productName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="productDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price (€) *</label>
+                    <input type="number" class="form-input" id="productPrice" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stock Quantity</label>
+                    <input type="number" class="form-input" id="productStock" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" class="form-input" id="productCategory" placeholder="e.g. Shampoo, Cream, Tools">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteProductBtn" onclick="deleteProduct()" style="display: none;">Delete</button>
+                <button type="button" class="btn btn-primary" onclick="saveProduct()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sale Modal -->
+    <div class="modal-overlay" id="saleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="saleModalTitle">New Sale</h2>
+                <button class="modal-close" onclick="closeModal('saleModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="saleId">
+                <div class="form-group">
+                    <label class="form-label">Client (Optional)</label>
+                    <select class="form-select" id="saleClient">
+                        <option value="">Walk-in Customer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Product *</label>
+                    <select class="form-select" id="saleProduct" onchange="updateSalePrice()" required>
+                        <option value="">Select Product</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity *</label>
+                    <input type="number" class="form-input" id="saleQuantity" min="1" value="1" onchange="updateSaleTotal()" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit Price (€)</label>
+                    <input type="number" class="form-input" id="saleUnitPrice" step="0.01" min="0" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Total (€)</label>
+                    <input type="number" class="form-input" id="saleTotal" step="0.01" min="0" readonly style="font-weight: 700; font-size: 1.25rem;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-input" id="saleDate" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-textarea" id="saleNotes" placeholder="Optional notes..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('saleModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteSaleBtn" onclick="deleteSale()" style="display: none;">Delete</button>
+                <button type="button" class="btn btn-primary" onclick="saveSale()">Complete Sale</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Selection Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">What would you like to add?</h2>
+                <button class="modal-close" onclick="closeModal('addModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 0.75rem; justify-content: flex-start; padding: 1rem;" onclick="openAppointmentModal(); closeModal('addModal');">
+                    <span style="font-size: 1.5rem; margin-right: 0.75rem;">📅</span>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 600;">Appointment</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">Book a new appointment</div>
+                    </div>
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.75rem; justify-content: flex-start; padding: 1rem;" onclick="openClientModal(); closeModal('addModal');">
+                    <span style="font-size: 1.5rem; margin-right: 0.75rem;">👤</span>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 600;">Client</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">Add a new client</div>
+                    </div>
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.75rem; justify-content: flex-start; padding: 1rem;" onclick="openStaffModal(); closeModal('addModal');">
+                    <span style="font-size: 1.5rem; margin-right: 0.75rem;">💇</span>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 600;">Staff Member</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">Add a team member</div>
+                    </div>
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.75rem; justify-content: flex-start; padding: 1rem;" onclick="openServiceModal(); closeModal('addModal');">
+                    <span style="font-size: 1.5rem; margin-right: 0.75rem;">✂️</span>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 600;">Service</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">Add a salon service</div>
+                    </div>
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.75rem; justify-content: flex-start; padding: 1rem;" onclick="openProductModal(); closeModal('addModal');">
+                    <span style="font-size: 1.5rem; margin-right: 0.75rem;">🧴</span>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 600;">Product</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">Add a product for sale</div>
+                    </div>
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; justify-content: flex-start; padding: 1rem;" onclick="openSaleModal(); closeModal('addModal');">
+                    <span style="font-size: 1.5rem; margin-right: 0.75rem;">🛒</span>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 600;">Sale</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8; font-weight: 400;">Sell a product to client</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=<?php echo $version; ?>"></script>
+
+</body>
+</html>
