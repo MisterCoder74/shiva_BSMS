@@ -1046,6 +1046,52 @@ function deleteProduct() {
 // STATISTICS
 // ============================================
 
+// Dependency-free SVG bar chart renderer.
+// data: [{ label, value, color }]. opts.formatValue formats the value shown next to each bar.
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function renderBarChart(containerId, data, opts = {}) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!data || data.length === 0 || data.every(d => !d.value)) {
+        container.innerHTML = '<div class="empty-state" style="padding: 1rem;"><p>No data available</p></div>';
+        return;
+    }
+
+    const formatValue = opts.formatValue || (v => v);
+    const barH = 22;
+    const gapY = 14;
+    const labelW = 120;
+    const trackW = 200;
+    const valueW = 70;
+    const totalW = labelW + trackW + valueW;
+    const totalH = data.length * (barH + gapY) - gapY;
+    const maxValue = Math.max(...data.map(d => d.value || 0), 1);
+
+    const rows = data.map((d, i) => {
+        const y = i * (barH + gapY);
+        const w = Math.max(((d.value || 0) / maxValue) * trackW, d.value ? 2 : 0);
+        const color = d.color || 'var(--primary)';
+        return `
+            <g transform="translate(0, ${y})">
+                <text x="${labelW - 8}" y="${barH / 2 + 4}" text-anchor="end" font-size="12" fill="var(--gray-600)">${escapeHtml(d.label)}</text>
+                <rect x="${labelW}" y="0" width="${trackW}" height="${barH}" rx="4" fill="var(--gray-100)"></rect>
+                <rect x="${labelW}" y="0" width="${w}" height="${barH}" rx="4" fill="${color}"></rect>
+                <text x="${labelW + trackW + 8}" y="${barH / 2 + 4}" font-size="12" fill="var(--gray-800)" font-weight="600">${escapeHtml(formatValue(d.value || 0))}</text>
+            </g>
+        `;
+    }).join('');
+
+    container.innerHTML = `<svg viewBox="0 0 ${totalW} ${totalH}" width="100%" height="${totalH}" style="max-width: 100%;">${rows}</svg>`;
+}
+
 function setStatsPeriod(period) {
     statsPeriod = period;
     document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
@@ -1106,6 +1152,24 @@ function refreshStats() {
     document.getElementById('statsCancelled').textContent = appointments.filter(a => a.status === 'cancelled').length;
     document.getElementById('statsNoShow').textContent = appointments.filter(a => a.status === 'noshow').length;
 
+    // Revenue breakdown chart
+    renderBarChart('chartRevenue', [
+        { label: 'Services', value: servicesRevenue, color: 'var(--primary)' },
+        { label: 'Products', value: productsRevenue, color: 'var(--secondary)' }
+    ], { formatValue: formatCurrency });
+
+    // Appointments status chart
+    const completedCount = appointments.filter(a => a.status === 'completed' || a.status === 'paid').length;
+    const cancelledCount = appointments.filter(a => a.status === 'cancelled').length;
+    const noShowCount = appointments.filter(a => a.status === 'noshow').length;
+    const pendingCount = appointments.length - completedCount - cancelledCount - noShowCount;
+    renderBarChart('chartAppointments', [
+        { label: 'Completed', value: completedCount, color: 'var(--success)' },
+        { label: 'Pending', value: pendingCount, color: 'var(--info)' },
+        { label: 'Cancelled', value: cancelledCount, color: 'var(--danger)' },
+        { label: 'No Show', value: noShowCount, color: 'var(--warning)' }
+    ], { formatValue: v => String(v) });
+
     // Top services
     const serviceCounts = {};
     appointments.filter(a => a.status === 'completed' || a.status === 'paid').forEach(a => {
@@ -1130,6 +1194,29 @@ function refreshStats() {
             `;
         }).join('');
     }
+
+    renderBarChart('chartTopServices', topServices.map(([id, count]) => {
+        const service = DB.services.find(s => s.id === id);
+        return { label: service ? service.name : 'Unknown', value: count, color: 'var(--primary)' };
+    }), { formatValue: v => `${v} bookings` });
+
+    // Staff performance (appointments handled + services revenue generated)
+    const staffCounts = {};
+    const staffRevenue = {};
+    appointments.filter(a => a.status === 'completed' || a.status === 'paid').forEach(a => {
+        staffCounts[a.staffId] = (staffCounts[a.staffId] || 0) + 1;
+        staffRevenue[a.staffId] = (staffRevenue[a.staffId] || 0) + parseFloat(a.price || 0);
+    });
+
+    const topStaff = Object.entries(staffRevenue)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    renderBarChart('chartStaffPerformance', topStaff.map(([id, revenue]) => {
+        const staff = DB.staff.find(s => s.id === id);
+        const name = staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown';
+        return { label: `${name} (${staffCounts[id] || 0})`, value: revenue, color: 'var(--secondary)' };
+    }), { formatValue: formatCurrency });
 
     // Top products
     const productCounts = {};
@@ -1158,6 +1245,12 @@ function refreshStats() {
             `;
         }).join('');
     }
+
+    renderBarChart('chartTopProducts', topProducts.map(([id, count]) => {
+        const product = DB.products.find(p => p.id === id);
+        const revenue = productRevenue[id] || 0;
+        return { label: product ? product.name : 'Unknown', value: revenue, color: 'var(--secondary)' };
+    }), { formatValue: formatCurrency });
 }
 
 // ============================================
