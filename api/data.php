@@ -38,6 +38,125 @@ function respond($code, $payload) {
     exit;
 }
 
+// ============================================
+// VALIDATION
+// ============================================
+// Server-side hardening: the frontend already validates forms, but the API
+// must not trust the client. Each entity has required fields + type/range
+// checks; a request with any invalid record is rejected wholesale (no partial
+// writes) so data/*.json never contains a malformed record.
+
+function isNonEmptyString($v) {
+    return is_string($v) && trim($v) !== '';
+}
+
+function isNonNegativeNumber($v) {
+    return is_numeric($v) && (float)$v >= 0;
+}
+
+function isPositiveNumber($v) {
+    return is_numeric($v) && (float)$v > 0;
+}
+
+function isValidEmailOrEmpty($v) {
+    if (!isset($v) || $v === '') return true;
+    return is_string($v) && filter_var($v, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+// field => [required(bool), validator(callable)]
+$recordSchemas = [
+    'clients' => [
+        'id' => [true, 'isNonEmptyString'],
+        'firstName' => [true, 'isNonEmptyString'],
+        'lastName' => [true, 'isNonEmptyString'],
+        'email' => [false, 'isValidEmailOrEmpty'],
+    ],
+    'staff' => [
+        'id' => [true, 'isNonEmptyString'],
+        'firstName' => [true, 'isNonEmptyString'],
+        'lastName' => [true, 'isNonEmptyString'],
+        'email' => [false, 'isValidEmailOrEmpty'],
+    ],
+    'services' => [
+        'id' => [true, 'isNonEmptyString'],
+        'name' => [true, 'isNonEmptyString'],
+        'duration' => [true, 'isPositiveNumber'],
+        'price' => [true, 'isNonNegativeNumber'],
+    ],
+    'products' => [
+        'id' => [true, 'isNonEmptyString'],
+        'name' => [true, 'isNonEmptyString'],
+        'price' => [true, 'isNonNegativeNumber'],
+        'stock' => [true, 'isNonNegativeNumber'],
+    ],
+    'appointments' => [
+        'id' => [true, 'isNonEmptyString'],
+        'clientId' => [true, 'isNonEmptyString'],
+        'staffId' => [true, 'isNonEmptyString'],
+        'serviceId' => [true, 'isNonEmptyString'],
+        'date' => [true, 'isNonEmptyString'],
+        'time' => [true, 'isNonEmptyString'],
+        'price' => [true, 'isNonNegativeNumber'],
+    ],
+    'sales' => [
+        'id' => [true, 'isNonEmptyString'],
+        'productId' => [true, 'isNonEmptyString'],
+        'date' => [true, 'isNonEmptyString'],
+        'quantity' => [true, 'isPositiveNumber'],
+        'unitPrice' => [true, 'isNonNegativeNumber'],
+        'total' => [true, 'isNonNegativeNumber'],
+    ],
+];
+
+$appointmentStatuses = ['pending', 'completed', 'paid', 'cancelled', 'noshow'];
+
+// Validates one record against an entity's schema. Returns an error string, or null if valid.
+function validateRecord($entity, $record, $index, $schemas, $appointmentStatuses) {
+    $prefix = "{$entity}[{$index}]";
+
+    if (!is_array($record)) {
+        return "$prefix must be an object";
+    }
+    $schema = $schemas[$entity] ?? null;
+    if (!$schema) return null;
+
+    foreach ($schema as $field => [$required, $validator]) {
+        $present = array_key_exists($field, $record) && $record[$field] !== null && $record[$field] !== '';
+        if (!$present) {
+            if ($required) {
+                return "$prefix.$field is required";
+            }
+            continue;
+        }
+        if (!call_user_func($validator, $record[$field])) {
+            return "$prefix.$field is invalid";
+        }
+    }
+
+    if ($entity === 'appointments' && isset($record['status']) && $record['status'] !== '' && !in_array($record['status'], $appointmentStatuses, true)) {
+        return "$prefix.status must be one of: " . implode(', ', $appointmentStatuses);
+    }
+
+    return null;
+}
+
+// Validates an entity's payload (array of records, or the settings object). Returns an error string, or null if valid.
+function validateEntityPayload($entity, $decoded, $schemas, $appointmentStatuses) {
+    if ($entity === 'settings') {
+        if (isset($decoded['email']) && !isValidEmailOrEmpty($decoded['email'])) {
+            return 'settings.email is invalid';
+        }
+        return null;
+    }
+
+    foreach ($decoded as $index => $record) {
+        $error = validateRecord($entity, $record, $index, $schemas, $appointmentStatuses);
+        if ($error) return $error;
+    }
+
+    return null;
+}
+
 function entityFile($dataDir, $entity) {
     return $dataDir . '/' . $entity . '.json';
 }
@@ -126,6 +245,12 @@ if ($method === 'POST' || $method === 'PUT') {
             }
         }
         foreach ($entities as $e) {
+            $error = validateEntityPayload($e, $decoded[$e], $recordSchemas, $appointmentStatuses);
+            if ($error) {
+                respond(400, ['error' => $error]);
+            }
+        }
+        foreach ($entities as $e) {
             writeEntity($dataDir, $e, $decoded[$e]);
         }
         respond(200, ['success' => true]);
@@ -140,6 +265,11 @@ if ($method === 'POST' || $method === 'PUT') {
         if (!is_array($decoded)) {
             respond(400, ['error' => "$entity payload must be a JSON array"]);
         }
+    }
+
+    $error = validateEntityPayload($entity, $decoded, $recordSchemas, $appointmentStatuses);
+    if ($error) {
+        respond(400, ['error' => $error]);
     }
 
     writeEntity($dataDir, $entity, $decoded);
