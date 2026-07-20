@@ -1,14 +1,21 @@
 <?php
 // Beauty Salon Management System - JSON data API
-// GET  -> returns current DB as JSON (creates it from defaults if missing)
-// POST -> overwrites DB with the posted JSON body
+// One JSON file per entity under data/, so the store scales as data grows
+// (e.g. dozens/hundreds of clients) without rewriting unrelated entities.
+//
+// GET  ?entity=clients            -> returns data/clients.json (creates with default if missing)
+// POST ?entity=clients  (body=JSON)-> overwrites data/clients.json with the posted value
+//
+// Also supports GET/POST with no ?entity (or entity=all) for bulk load/import,
+// operating on all entities in one request (used by initial migration/import).
 
 header('Content-Type: application/json');
 
 $dataDir = __DIR__ . '/../data';
-$dataFile = $dataDir . '/db.json';
 
-$defaultDB = [
+$entities = ['settings', 'clients', 'staff', 'services', 'products', 'appointments', 'sales'];
+
+$defaults = [
     'settings' => [
         'salonName' => 'Beauty Salon',
         'ivaCode' => '',
@@ -31,28 +38,25 @@ function respond($code, $payload) {
     exit;
 }
 
-if (!is_dir($dataDir)) {
-    if (!mkdir($dataDir, 0775, true)) {
-        respond(500, ['error' => 'Could not create data directory']);
-    }
+function entityFile($dataDir, $entity) {
+    return $dataDir . '/' . $entity . '.json';
 }
 
-$method = $_SERVER['REQUEST_METHOD'];
-
-if ($method === 'GET') {
-    if (!file_exists($dataFile)) {
-        $fp = fopen($dataFile, 'c+');
+function readEntity($dataDir, $entity, $default) {
+    $file = entityFile($dataDir, $entity);
+    if (!file_exists($file)) {
+        $fp = fopen($file, 'c+');
         if ($fp === false) {
-            respond(500, ['error' => 'Could not create data file']);
+            respond(500, ['error' => "Could not create data file for $entity"]);
         }
         flock($fp, LOCK_EX);
-        fwrite($fp, json_encode($defaultDB, JSON_PRETTY_PRINT));
+        fwrite($fp, json_encode($default, JSON_PRETTY_PRINT));
         flock($fp, LOCK_UN);
         fclose($fp);
-        respond(200, $defaultDB);
+        return $default;
     }
 
-    $fp = fopen($dataFile, 'r');
+    $fp = fopen($file, 'r');
     flock($fp, LOCK_SH);
     $contents = stream_get_contents($fp);
     flock($fp, LOCK_UN);
@@ -60,9 +64,48 @@ if ($method === 'GET') {
 
     $decoded = json_decode($contents, true);
     if ($decoded === null && trim($contents) !== '') {
-        respond(500, ['error' => 'Data file is corrupted']);
+        respond(500, ['error' => "Data file for $entity is corrupted"]);
     }
-    respond(200, $decoded ?? $defaultDB);
+    return $decoded ?? $default;
+}
+
+function writeEntity($dataDir, $entity, $value) {
+    $file = entityFile($dataDir, $entity);
+    $fp = fopen($file, 'c+');
+    if ($fp === false) {
+        respond(500, ['error' => "Could not open data file for $entity"]);
+    }
+    flock($fp, LOCK_EX);
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($value, JSON_PRETTY_PRINT));
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+}
+
+if (!is_dir($dataDir)) {
+    if (!mkdir($dataDir, 0775, true)) {
+        respond(500, ['error' => 'Could not create data directory']);
+    }
+}
+
+$method = $_SERVER['REQUEST_METHOD'];
+$entity = $_GET['entity'] ?? 'all';
+
+if ($entity !== 'all' && !in_array($entity, $entities, true)) {
+    respond(400, ['error' => "Unknown entity: $entity"]);
+}
+
+if ($method === 'GET') {
+    if ($entity === 'all') {
+        $result = [];
+        foreach ($entities as $e) {
+            $result[$e] = readEntity($dataDir, $e, $defaults[$e]);
+        }
+        respond(200, $result);
+    }
+    respond(200, readEntity($dataDir, $entity, $defaults[$entity]));
 }
 
 if ($method === 'POST' || $method === 'PUT') {
@@ -72,30 +115,34 @@ if ($method === 'POST' || $method === 'PUT') {
     if ($decoded === null && trim($raw) !== '') {
         respond(400, ['error' => 'Invalid JSON payload']);
     }
-    if (!is_array($decoded)) {
-        respond(400, ['error' => 'Payload must be a JSON object']);
+
+    if ($entity === 'all') {
+        if (!is_array($decoded)) {
+            respond(400, ['error' => 'Payload must be a JSON object']);
+        }
+        foreach ($entities as $e) {
+            if (!array_key_exists($e, $decoded)) {
+                respond(400, ['error' => "Missing required key: $e"]);
+            }
+        }
+        foreach ($entities as $e) {
+            writeEntity($dataDir, $e, $decoded[$e]);
+        }
+        respond(200, ['success' => true]);
     }
 
-    // Basic shape validation: required top-level keys must exist
-    $requiredKeys = ['settings', 'clients', 'staff', 'services', 'products', 'appointments', 'sales'];
-    foreach ($requiredKeys as $key) {
-        if (!array_key_exists($key, $decoded)) {
-            respond(400, ['error' => "Missing required key: $key"]);
+    // Single-entity write: settings is an object, everything else is an array
+    if ($entity === 'settings') {
+        if (!is_array($decoded)) {
+            respond(400, ['error' => 'settings payload must be a JSON object']);
+        }
+    } else {
+        if (!is_array($decoded)) {
+            respond(400, ['error' => "$entity payload must be a JSON array"]);
         }
     }
 
-    $fp = fopen($dataFile, 'c+');
-    if ($fp === false) {
-        respond(500, ['error' => 'Could not open data file for writing']);
-    }
-    flock($fp, LOCK_EX);
-    ftruncate($fp, 0);
-    rewind($fp);
-    fwrite($fp, json_encode($decoded, JSON_PRETTY_PRINT));
-    fflush($fp);
-    flock($fp, LOCK_UN);
-    fclose($fp);
-
+    writeEntity($dataDir, $entity, $decoded);
     respond(200, ['success' => true]);
 }
 

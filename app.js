@@ -106,17 +106,24 @@ function getCurrentTime() {
 }
 
 // ============================================
-// DATA PERSISTENCE (JSON file via PHP API)
+// DATA PERSISTENCE (one JSON file per entity via PHP API)
 // ============================================
 
 const API_URL = 'api/data.php';
+const DB_ENTITIES = ['settings', 'clients', 'staff', 'services', 'products', 'appointments', 'sales'];
 
-function saveData() {
-    fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(DB)
-    }).catch(err => {
+// saveData('clients') saves only DB.clients to data/clients.json.
+// saveData('products', 'sales') saves both in parallel (e.g. a sale that also updates stock).
+// saveData() with no args saves every entity (bulk import / initial seed only - avoid in hot paths).
+function saveData(...entityNames) {
+    const names = entityNames.length ? entityNames : DB_ENTITIES;
+    Promise.all(names.map(name =>
+        fetch(`${API_URL}?entity=${encodeURIComponent(name)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(DB[name])
+        })
+    )).catch(err => {
         console.error('Save failed:', err);
         showSaveError();
     });
@@ -124,10 +131,13 @@ function saveData() {
 
 async function loadData() {
     try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const parsed = await res.json();
-        Object.assign(DB, parsed);
+        const results = await Promise.all(
+            DB_ENTITIES.map(name => fetch(`${API_URL}?entity=${encodeURIComponent(name)}`).then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status} for ${name}`);
+                return res.json();
+            }))
+        );
+        DB_ENTITIES.forEach((name, i) => { DB[name] = results[i]; });
     } catch (err) {
         console.error('Load failed:', err);
         showSaveError('Could not load data from server. Working offline with defaults.');
@@ -600,7 +610,7 @@ function saveAppointment() {
         DB.appointments.push({ id: generateId(), clientId, staffId, serviceId, date, time, price, status, notes });
     }
 
-    saveData();
+    saveData('appointments');
     closeModal('appointmentModal');
     refreshCurrentPage();
 }
@@ -609,7 +619,7 @@ function deleteAppointment() {
     const id = document.getElementById('appointmentId').value;
     if (confirm('Are you sure you want to delete this appointment?')) {
         DB.appointments = DB.appointments.filter(a => a.id !== id);
-        saveData();
+        saveData('appointments');
         closeModal('appointmentModal');
         refreshCurrentPage();
     }
@@ -717,7 +727,7 @@ function saveClient() {
         DB.clients.push({ id: generateId(), firstName, lastName, phone, email, dob, notes });
     }
 
-    saveData();
+    saveData('clients');
     closeModal('clientModal');
     refreshCurrentPage();
 }
@@ -726,7 +736,7 @@ function deleteClient() {
     const id = document.getElementById('clientId').value;
     if (confirm('Are you sure you want to delete this client?')) {
         DB.clients = DB.clients.filter(c => c.id !== id);
-        saveData();
+        saveData('clients');
         closeModal('clientModal');
         refreshCurrentPage();
     }
@@ -819,7 +829,7 @@ function saveStaff() {
         DB.staff.push({ id: generateId(), firstName, lastName, phone, email, role, color });
     }
 
-    saveData();
+    saveData('staff');
     closeModal('staffModal');
     refreshCurrentPage();
 }
@@ -828,7 +838,7 @@ function deleteStaff() {
     const id = document.getElementById('staffId').value;
     if (confirm('Are you sure you want to delete this staff member?')) {
         DB.staff = DB.staff.filter(s => s.id !== id);
-        saveData();
+        saveData('staff');
         closeModal('staffModal');
         refreshCurrentPage();
     }
@@ -918,7 +928,7 @@ function saveService() {
         DB.services.push({ id: generateId(), name, description, duration, price, category });
     }
 
-    saveData();
+    saveData('services');
     closeModal('serviceModal');
     refreshCurrentPage();
 }
@@ -927,7 +937,7 @@ function deleteService() {
     const id = document.getElementById('serviceId').value;
     if (confirm('Are you sure you want to delete this service?')) {
         DB.services = DB.services.filter(s => s.id !== id);
-        saveData();
+        saveData('services');
         closeModal('serviceModal');
         refreshCurrentPage();
     }
@@ -1017,7 +1027,7 @@ function saveProduct() {
         DB.products.push({ id: generateId(), name, description, price, stock, category });
     }
 
-    saveData();
+    saveData('products');
     closeModal('productModal');
     refreshCurrentPage();
 }
@@ -1026,7 +1036,7 @@ function deleteProduct() {
     const id = document.getElementById('productId').value;
     if (confirm('Are you sure you want to delete this product?')) {
         DB.products = DB.products.filter(p => p.id !== id);
-        saveData();
+        saveData('products');
         closeModal('productModal');
         refreshCurrentPage();
     }
@@ -1302,7 +1312,7 @@ function quickSellProduct() {
     product.stock = (product.stock || 0) - quantity;
     
     DB.sales.push(sale);
-    saveData();
+    saveData('products', 'sales');
     refreshSales();
     
     // Reset quick sale form
@@ -1446,7 +1456,7 @@ function saveSale() {
     // Update stock
     product.stock = (product.stock || 0) - quantity;
 
-    saveData();
+    saveData('products', 'sales');
     closeModal('saleModal');
     refreshCurrentPage();
 }
@@ -1462,7 +1472,7 @@ function deleteSale() {
             }
         }
         DB.sales = DB.sales.filter(s => s.id !== id);
-        saveData();
+        saveData('products', 'sales');
         closeModal('saleModal');
         refreshCurrentPage();
     }
@@ -1489,7 +1499,7 @@ function saveSettings() {
     DB.settings.email = document.getElementById('settingEmail').value.trim();
     DB.settings.website = document.getElementById('settingWebsite').value.trim();
 
-    saveData();
+    saveData('settings');
     updateHeaderInfo();
     alert('Settings saved successfully!');
 }
